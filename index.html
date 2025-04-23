@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Lesson Availability Calendar</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 2rem;
+      line-height: 1.4;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 0.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      text-align: center;
+      padding: 6px;
+    }
+
+    th {
+      background: #f0f0f0;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    td.slot {
+      cursor: pointer;
+      height: 28px;
+      user-select: none;
+    }
+
+    /* Choice colouring */
+    .selected-1 {
+      background: #8bc34a;
+      color: #fff;
+    }
+
+    .selected-2 {
+      background: #ffc107;
+      color: #000;
+    }
+
+    .selected-3 {
+      background: #f44336;
+      color: #fff;
+    }
+
+    /* Legend styling */
+    .legend {
+      display: flex;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    .legend div {
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+
+    .legend span {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 1px solid #ccc;
+    }
+
+    #summary {
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tutor Lesson Availability (Monday – Saturday)</h1>
+
+  <div class="legend">
+    <div><span class="selected-1"></span> 1st choice</div>
+    <div><span class="selected-2"></span> 2nd choice</div>
+    <div><span class="selected-3"></span> 3rd choice</div>
+  </div>
+
+  <table id="calendar"></table>
+
+  <p id="summary">No slots selected.</p>
+
+  <script>
+    // Configuration — amend start / end as needed (24‑hour clock)
+    const startHour = 8;          // 08:00
+    const endHour = 21.5;         // 21:30 (21.5 = 21 h 30 min)
+    const days = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ];
+
+    /** Helper to format minutes → "HH:MM" */
+    function formatTime(mins) {
+      const h = String(Math.floor(mins / 60)).padStart(2, "0");
+      const m = mins % 60 === 0 ? "00" : "30";
+      return `${h}:${m}`;
+    }
+
+    /** Build the calendar table */
+    function buildTable() {
+      const table = document.getElementById("calendar");
+
+      // Header row
+      const thead = table.createTHead();
+      const headRow = thead.insertRow();
+      headRow.insertCell().textContent = "Time"; // top‑left empty corner
+      days.forEach(day => headRow.insertCell().textContent = day);
+
+      // Body rows
+      const tbody = table.createTBody();
+      const startMins = startHour * 60;
+      const endMins = endHour * 60;
+
+      for (let mins = startMins; mins <= endMins; mins += 30) {
+        const row = tbody.insertRow();
+        row.insertCell().textContent = formatTime(mins);
+
+        days.forEach(day => {
+          const cell = row.insertCell();
+          cell.classList.add("slot");
+          cell.dataset.day = day;
+          cell.dataset.time = formatTime(mins);
+          cell.addEventListener("click", handleClick);
+        });
+      }
+    }
+
+    // Track selected cells
+    const selections = []; // {cell, day, time}
+
+    function handleClick(e) {
+      const cell = e.currentTarget;
+      const index = selections.findIndex(sel => sel.cell === cell);
+
+      if (index !== -1) {
+        // Deselect existing choice
+        cell.classList.remove(`selected-${index + 1}`);
+        selections.splice(index, 1);
+        // Re‑colour remaining selections to maintain order
+        selections.forEach((sel, i) => {
+          sel.cell.className = "slot selected-" + (i + 1);
+        });
+      } else {
+        if (selections.length === 3) {
+          alert("You have already picked three choices. Click a chosen slot again to deselect it.");
+          return;
+        }
+        selections.push({ cell, day: cell.dataset.day, time: cell.dataset.time });
+        cell.classList.add(`selected-${selections.length}`);
+      }
+      updateSummary();
+    }
+
+    function updateSummary() {
+      const summary = document.getElementById("summary");
+      if (selections.length === 0) {
+        summary.textContent = "No slots selected.";
+        return;
+      }
+      const labels = ["1st", "2nd", "3rd"];
+      summary.innerHTML = selections
+        .map((sel, i) => `${labels[i]} choice: <strong>${sel.day}</strong>, <strong>${sel.time}</strong>`) 
+        .join("<br>");
+    }
+
+    buildTable();
+  </script>
+</body>
+</html>
